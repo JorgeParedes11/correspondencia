@@ -1,312 +1,1333 @@
-function doGet() {
-  // Usamos createTemplateFromFile para procesar las plantillas correctamente
-  return HtmlService.createTemplateFromFile('Index-7')
-    .evaluate()
-    .setTitle('Configuración de Correspondencia')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+<style>
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 20px;
+  background-color: #f4f4f4;
 }
 
-function include(filename) {
-  // Función para incluir otros archivos HTML
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
-function verifyConnection(googleDocId, googleSheetId, outputFolderId) {
-  var logs = [];
-  try {
-    logs.push('Iniciando verifyConnection');
-    logs.push('googleDocId: ' + googleDocId);
-    logs.push('googleSheetId: ' + googleSheetId);
-    logs.push('outputFolderId: ' + outputFolderId);
-
-    // Verificar el documento y obtener su nombre
-    var doc = DocumentApp.openById(googleDocId);
-    var docName = doc.getName();
-    logs.push('Documento abierto correctamente: ' + docName);
-
-    // Verificar la hoja de cálculo y obtener su nombre
-    var sheet = SpreadsheetApp.openById(googleSheetId);
-    var sheetName = sheet.getName();
-    logs.push('Hoja de cálculo abierta correctamente: ' + sheetName);
-
-    // Verificar la carpeta de salida y obtener su nombre
-    var folder = DriveApp.getFolderById(outputFolderId);
-    var folderName = folder.getName();
-    logs.push('Carpeta de salida abierta correctamente: ' + folderName);
-
-    return {
-      success: true,
-      docName: docName,
-      sheetName: sheetName,
-      folderName: folderName,
-      logs: logs
-    };
-  } catch (error) {
-    logs.push('Error en verifyConnection: ' + error.toString());
-    return {
-      success: false,
-      error: error.toString(),
-      logs: logs
-    };
-  }
+.block {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-function verifySheetName(sheetName, googleSheetId) {
-  var logs = [];
-  try {
-    logs.push('Iniciando verifySheetName');
-    logs.push('sheetName: ' + sheetName);
-    logs.push('googleSheetId: ' + googleSheetId);
+h1, h3 {
+  color: #333;
+  margin-top: 0;
+}
 
-    var spreadsheet = SpreadsheetApp.openById(googleSheetId);
-    var sheets = spreadsheet.getSheets();
-    var sheetNames = sheets.map(function(sheet) {
-      return sheet.getName();
-    });
+label {
+  display: block;
+  margin-top: 10px;
+}
 
-    logs.push('Pestañas disponibles: ' + sheetNames.join(', '));
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
 
-    if (sheetNames.indexOf(sheetName) !== -1) {
-      logs.push('La pestaña existe en el Google Sheet.');
-      return {
-        exists: true,
-        message: 'La pestaña "' + sheetName + '" existe en el Google Sheet.',
-        logs: logs
-      };
+input[type="text"]:disabled, input[type="number"]:disabled, select:disabled {
+  background-color: #f1f1f1;
+  color: #666;
+  cursor: not-allowed;
+}
+
+button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+#columnMappings {
+  margin-top: 20px;
+}
+
+.column-pair {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.column-pair input {
+  width: 48%;
+}
+
+#connectButton {
+  background-color: #008CBA;
+}
+
+#connectButton:hover {
+  background-color: #007B9A;
+}
+
+#connectButton.connected {
+  background-color: #FFA500;
+}
+
+#connectButton.connected:hover {
+  background-color: #FF8C00;
+}
+
+#connectionStatus {
+  margin-top: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.file-name {
+  font-size: 0.9em;
+  color: #4682B4;
+  margin-left: 5px;
+}
+
+#removeColumnMapping {
+  background-color: #FFA500;
+}
+
+#removeColumnMapping:hover {
+  background-color: #FF8C00;
+}
+
+#removeColumnMapping:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.button-group button {
+  width: 48%;
+  margin-top: 0;
+}
+
+.verification-icon {
+  margin-left: 5px;
+  font-size: 1.2em;
+}
+
+.verification-status {
+  margin-top: 10px;
+  text-align: center;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.verification-error {
+  color: #FFA500;
+  font-weight: bold;
+}
+
+#verifyButton {
+  background-color: #4169E1;
+}
+
+#verifyButton:hover {
+  background-color: #1E90FF;
+}
+
+#verificationStatus {
+  margin-top: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+#spinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.sheet-selection {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sheet-selection input {
+  width: 70%;
+}
+
+.sheet-selection button {
+  width: 28%;
+}
+
+#sheetVerificationStatus {
+  margin-top: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.range-definition {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.range-definition > * {
+  width: 30%;
+}
+
+.range-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.range-buttons button {
+  width: 48%;
+}
+</style>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración de Correspondencia</title>
+  <?!= include('Index-1-css'); ?>
+</head>
+<body>
+  <div class="container">
+    <h1>Configuración de Correspondencia</h1>
+    <form id="documentForm">
+      <label for="googleDocId">ID del Google Doc Template: <span id="docNameLabel" class="file-name"></span></label>
+      <input type="text" id="googleDocId" required>
+
+      <label for="googleSheetId">ID de la Hoja de Cálculo de Google: <span id="sheetNameLabel" class="file-name"></span></label>
+      <input type="text" id="googleSheetId" required>
+
+      <label for="outputFolderId">ID de la Carpeta de Salida: <span id="folderNameLabel" class="file-name"></span></label>
+      <input type="text" id="outputFolderId" required>
+
+      <button type="button" id="connectButton">Conectar con Archivos</button>
+      <div id="connectionStatus"></div>
+
+      <h3>Seleccionar Pestaña de Google Sheet</h3>
+      <div class="sheet-selection">
+        <input type="text" id="sheetNameInput" placeholder="Nombre de la pestaña">
+        <button type="button" id="verifySheetButton">Verificar Pestaña</button>
+      </div>
+      <div id="sheetVerificationStatus"></div>
+
+      <div id="columnMappings">
+        <h3>Mapeo de Marcadores y Columnas</h3>
+        <p>Ingrese el marcador en el Google Doc y el nombre de la columna correspondiente en el Google Sheet.</p>
+        <div class="column-pair">
+          <input type="text" placeholder="Marcador en Google Doc (ej: {{NOMBRE}})" class="doc-marker">
+          <input type="text" placeholder="Columna en Google Sheet" class="sheet-column">
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="addColumnMapping">Añadir Otro Mapeo</button>
+        <button type="button" id="removeColumnMapping">Eliminar un Mapeo</button>
+      </div>
+
+      <button type="button" id="verifyButton">Verificar Marcadores y Columnas</button>
+      <div id="verificationStatus"></div>
+
+      <!-- Agregamos el botón "Reporte de Movimientos" -->
+      <button type="button" id="reporteButton">Reporte de Movimientos</button>
+      <button type="submit">Generar Documentos</button>
+    </form>
+  </div>
+
+  <?!= include('Index-3'); ?>
+  <?!= include('Index-4'); ?>
+  <?!= include('Index-5'); ?>
+  <?!= include('Index-6'); ?>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+</body>
+</html>
+
+<div id="confirmModal" class="modal">
+  <div class="modal-content">
+    <p>Está eliminando una celda que contiene información. Si la elimina, no podrá realizar la correspondencia.</p>
+    <div class="modal-buttons">
+      <button id="confirmDelete">Sí, Continuar y Eliminar</button>
+      <button id="cancelDelete">No, No quiero Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var isConnected = false; // Definición global de isConnected
+var logs = []; // Variable global para almacenar los logs
+
+function toggleConnection() {
+  var connectButton = document.getElementById('connectButton');
+  var googleDocId = document.getElementById('googleDocId');
+  var googleSheetId = document.getElementById('googleSheetId');
+  var outputFolderId = document.getElementById('outputFolderId');
+  var connectionStatus = document.getElementById('connectionStatus');
+  var sheetNameInput = document.getElementById('sheetNameInput');
+  var verifySheetButton = document.getElementById('verifySheetButton');
+
+  if (!isConnected) {
+    if (googleDocId.value && googleSheetId.value && outputFolderId.value) {
+      connectionStatus.textContent = 'Conectando...';
+      connectionStatus.style.color = ''; // Restablecer color
+      logs.push('Iniciando conexión con los archivos.');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            connectionStatus.textContent = 'Conexión exitosa!';
+            connectionStatus.style.color = 'green'; // Mantener el color original
+            googleDocId.disabled = true;
+            googleSheetId.disabled = true;
+            outputFolderId.disabled = true;
+            connectButton.textContent = 'Desconectar';
+            connectButton.classList.add('connected');
+            isConnected = true;
+            sheetNameInput.disabled = false;
+            verifySheetButton.disabled = false;
+            document.getElementById('docNameLabel').textContent = '(' + result.docName + ')';
+            document.getElementById('sheetNameLabel').textContent = '(' + result.sheetName + ')';
+            document.getElementById('folderNameLabel').textContent = '(' + result.folderName + ')';
+            logs.push('Conexión exitosa con los archivos.');
+          } else {
+            connectionStatus.textContent = 'Error de conexión: ' + result.error;
+            connectionStatus.style.color = 'red';
+            logs.push('Error de conexión: ' + result.error);
+          }
+        })
+        .withFailureHandler(function(error) {
+          connectionStatus.textContent = 'Error de conexión: ' + error;
+          connectionStatus.style.color = 'red';
+          logs.push('Error de conexión: ' + error);
+        })
+        .verifyConnection(googleDocId.value, googleSheetId.value, outputFolderId.value);
     } else {
-      logs.push('La pestaña no existe en el Google Sheet.');
-      return {
-        exists: false,
-        message: 'La pestaña "' + sheetName + '" no existe en el Google Sheet.',
-        availableSheets: sheetNames,
-        logs: logs
-      };
+      alert('Por favor, ingrese todos los IDs antes de conectar.');
+      logs.push('Intento de conexión sin todos los IDs ingresados.');
     }
-  } catch (error) {
-    logs.push('Error en verifySheetName: ' + error.toString());
-    return {
-      exists: false,
-      message: 'Error al verificar el nombre de la pestaña.',
-      logs: logs,
-      error: error.toString()
-    };
+  } else {
+    googleDocId.disabled = false;
+    googleSheetId.disabled = false;
+    outputFolderId.disabled = false;
+    connectButton.textContent = 'Conectar con Archivos';
+    connectButton.classList.remove('connected');
+    connectionStatus.textContent = '';
+    connectionStatus.style.color = ''; // Restablecer color
+    isConnected = false;
+    sheetNameInput.disabled = true;
+    verifySheetButton.disabled = true;
+    disableMappingInputs();
+    document.getElementById('docNameLabel').textContent = '';
+    document.getElementById('sheetNameLabel').textContent = '';
+    document.getElementById('folderNameLabel').textContent = '';
+    logs.push('Desconexión de los archivos.');
   }
 }
 
-function verifyMappings(mappings, googleDocId, googleSheetId, sheetName) {
-  var logs = [];
-  try {
-    logs.push('Iniciando verifyMappings');
-    logs.push('googleDocId: ' + googleDocId);
-    logs.push('googleSheetId: ' + googleSheetId);
-    logs.push('sheetName: ' + sheetName);
+function enableMappingInputs() {
+  document.querySelectorAll('#columnMappings input, #addColumnMapping, #removeColumnMapping, #verifyButton').forEach(function(el) {
+    el.disabled = false;
+  });
+}
 
-    var doc = DocumentApp.openById(googleDocId);
-    var docText = doc.getBody().getText();
-    logs.push('Documento abierto correctamente');
+function disableMappingInputs() {
+  document.querySelectorAll('#columnMappings input, #addColumnMapping, #removeColumnMapping, #verifyButton').forEach(function(el) {
+    el.disabled = true;
+  });
+}
 
-    var spreadsheet = SpreadsheetApp.openById(googleSheetId);
-    var targetSheet = spreadsheet.getSheetByName(sheetName);
-    if (!targetSheet) {
-      logs.push('La pestaña especificada no existe en el Google Sheet.');
-      throw 'La pestaña especificada no existe en el Google Sheet.';
+function addColumnMapping() {
+  var columnMappings = document.getElementById('columnMappings');
+  var newPair = document.createElement('div');
+  newPair.className = 'column-pair';
+  newPair.innerHTML = 
+    <input type="text" placeholder="Marcador en Google Doc (ej: {{NOMBRE}})" class="doc-marker">
+    <input type="text" placeholder="Columna en Google Sheet" class="sheet-column">
+  ;
+  columnMappings.appendChild(newPair);
+  updateRemoveButtonState();
+  logs.push('Añadido un nuevo mapeo de marcador y columna.');
+}
+
+function removeColumnMapping() {
+  var columnMappings = document.getElementById('columnMappings');
+  var columnPairs = columnMappings.getElementsByClassName('column-pair');
+  if (columnPairs.length > 1) {
+    var lastPair = columnPairs[columnPairs.length - 1];
+    var inputs = lastPair.getElementsByTagName('input');
+    if (inputs[0].value || inputs[1].value) {
+      document.getElementById('confirmModal').style.display = 'block';
+    } else {
+      columnMappings.removeChild(lastPair);
+      updateRemoveButtonState();
+      logs.push('Eliminado un mapeo vacío de marcador y columna.');
     }
-    logs.push('Hoja de cálculo y pestaña abiertas correctamente');
-
-    var headers = targetSheet.getRange(1, 1, 1, targetSheet.getLastColumn()).getValues()[0];
-    logs.push('Encabezados obtenidos: ' + headers.join(', '));
-
-    var results = mappings.map(function(mapping) {
-      var result = {
-        docMarkerExists: false,
-        sheetColumnExists: false
-      };
-
-      logs.push('Verificando mapeo: ' + JSON.stringify(mapping));
-
-      // Si ambos están vacíos, los consideramos como válidos pero serán ignorados
-      if (mapping.docMarker === '' && mapping.sheetColumn === '') {
-        result.docMarkerExists = true;
-        result.sheetColumnExists = true;
-        return result;
-      }
-
-      // Verificar marcador en el documento
-      if (mapping.docMarker && docText.indexOf(mapping.docMarker) !== -1) {
-        result.docMarkerExists = true;
-      }
-
-      // Verificar columna en la hoja de cálculo
-      if (mapping.sheetColumn && headers.indexOf(mapping.sheetColumn) !== -1) {
-        result.sheetColumnExists = true;
-      }
-
-      logs.push('Resultado de la verificación: ' + JSON.stringify(result));
-      return result;
-    });
-
-    logs.push('Verificación completada');
-
-    // Devolvemos los resultados y los logs al cliente
-    return {
-      success: true,
-      results: results,
-      logs: logs
-    };
-  } catch (error) {
-    logs.push('Error en verifyMappings: ' + error);
-    // Devolvemos el error y los logs al cliente
-    return {
-      success: false,
-      error: error.toString(),
-      logs: logs
-    };
   }
 }
 
-function generateDocuments(googleDocId, googleSheetId, sheetName, outputFolderId, columnMappings) {
-  var logs = [];
-  try {
-    logs.push('Iniciando generateDocuments');
-    logs.push('googleDocId: ' + googleDocId);
-    logs.push('googleSheetId: ' + googleSheetId);
-    logs.push('sheetName: ' + sheetName);
-    logs.push('outputFolderId: ' + outputFolderId);
-    logs.push('columnMappings: ' + JSON.stringify(columnMappings));
+function confirmDelete() {
+  var columnMappings = document.getElementById('columnMappings');
+  var columnPairs = columnMappings.getElementsByClassName('column-pair');
+  columnMappings.removeChild(columnPairs[columnPairs.length - 1]);
+  document.getElementById('confirmModal').style.display = 'none';
+  updateRemoveButtonState();
+  logs.push('Confirmada y eliminada una celda con información.');
+}
 
-    // Abrir el documento de plantilla
-    var templateDoc = DocumentApp.openById(googleDocId);
-    logs.push('Documento de plantilla abierto correctamente');
+function cancelDelete() {
+  document.getElementById('confirmModal').style.display = 'none';
+  logs.push('Cancelada la eliminación de una celda con información.');
+}
 
-    // Abrir la hoja de cálculo
-    var spreadsheet = SpreadsheetApp.openById(googleSheetId);
-    var sheet = spreadsheet.getSheetByName(sheetName);
-    if (!sheet) {
-      logs.push('La pestaña especificada no existe en el Google Sheet.');
-      throw 'La pestaña especificada no existe en el Google Sheet.';
-    }
-    logs.push('Hoja de cálculo y pestaña abiertas correctamente');
+function updateRemoveButtonState() {
+  var columnPairs = document.getElementsByClassName('column-pair');
+  var removeButton = document.getElementById('removeColumnMapping');
+  if (columnPairs.length <= 1) {
+    removeButton.disabled = true;
+  } else {
+    removeButton.disabled = false;
+  }
+}
 
-    // Obtener los datos de la hoja de cálculo
-    var dataRange = sheet.getDataRange();
-    var data = dataRange.getValues();
-    var headers = data[0];
-    logs.push('Datos obtenidos de la hoja de cálculo');
+function handleFormSubmit(event) {
+  event.preventDefault();
+  var googleDocId = document.getElementById('googleDocId').value;
+  var googleSheetId = document.getElementById('googleSheetId').value;
+  var outputFolderId = document.getElementById('outputFolderId').value;
+  var sheetName = document.getElementById('sheetNameInput').value.trim();
+  var columnMappings = [];
+  var docMarkers = document.querySelectorAll('.doc-marker');
+  var sheetColumns = document.querySelectorAll('.sheet-column');
 
-    // Obtener la carpeta de salida
-    var outputFolder = DriveApp.getFolderById(outputFolderId);
-    logs.push('Carpeta de salida obtenida correctamente');
-
-    // Recorremos cada fila de datos (excepto la primera que es de encabezados)
-    for (var i = 1; i < data.length; i++) {
-      var row = data[i];
-      var newDoc = templateDoc.copy('Documento Generado - Fila ' + i);
-      var body = newDoc.getBody();
-
-      // Reemplazar los marcadores con los datos correspondientes
-      columnMappings.forEach(function(mapping) {
-        var docMarker = mapping.docMarker;
-        var sheetColumn = mapping.sheetColumn;
-        // Obtener el índice de la columna
-        var columnIndex = headers.indexOf(sheetColumn);
-        if (columnIndex !== -1) {
-          var value = row[columnIndex];
-          body.replaceText(docMarker, value);
-        }
+  for (var i = 0; i < docMarkers.length; i++) {
+    if (docMarkers[i].value && sheetColumns[i].value) {
+      columnMappings.push({
+        docMarker: docMarkers[i].value,
+        sheetColumn: sheetColumns[i].value
       });
-
-      // Mover el documento a la carpeta de salida
-      var newDocFile = DriveApp.getFileById(newDoc.getId());
-      outputFolder.addFile(newDocFile);
-      DriveApp.getRootFolder().removeFile(newDocFile); // Remover de Mi Unidad
-      logs.push('Documento generado y movido a la carpeta de salida: Documento Generado - Fila ' + i);
     }
+  }
 
-    logs.push('Generación de documentos completada');
+  logs.push('Iniciando generación de documentos.');
+  logs.push('Datos para generación: ' + JSON.stringify({
+    googleDocId: googleDocId,
+    googleSheetId: googleSheetId,
+    sheetName: sheetName,
+    outputFolderId: outputFolderId,
+    columnMappings: columnMappings
+  }));
 
-    return {
-      success: true,
-      logs: logs
-    };
-  } catch (error) {
-    logs.push('Error en generateDocuments: ' + error);
-    return {
-      success: false,
-      error: error.toString(),
-      logs: logs
-    };
+  google.script.run
+    .withSuccessHandler(function(result) {
+      alert('Documentos generados con éxito!');
+      logs.push('Documentos generados con éxito.');
+    })
+    .withFailureHandler(function(error) {
+      alert('Error al generar documentos: ' + error);
+      logs.push('Error al generar documentos: ' + error);
+    })
+    .generateDocuments(googleDocId, googleSheetId, sheetName, outputFolderId, columnMappings);
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('sheetNameInput').disabled = true;
+  document.getElementById('verifySheetButton').disabled = true;
+  disableMappingInputs();
+  updateRemoveButtonState();
+});
+</script>
+
+<!-- Index-4-main.html -->
+<div id="rangeDefinitionSection" style="display: none;">
+  <h3>Definir Rango de Correspondencia</h3>
+  <div class="range-definition">
+    <select id="columnSelect"></select>
+    <div>
+      <label for="rangeFrom">Desde:</label>
+      <input type="number" id="rangeFrom" min="1">
+    </div>
+    <div>
+      <label for="rangeTo">Hasta:</label>
+      <input type="number" id="rangeTo" min="1">
+    </div>
+  </div>
+  <div class="range-buttons">
+    <button type="button" id="defineRangeButton">Definir Rango</button>
+    <button type="button" id="viewRangeButton" disabled>Ver Rango</button>
+  </div>
+</div>
+
+<div id="columnMappings">
+  <h3>Mapeo de Marcadores y Columnas</h3>
+  <p>Ingrese el marcador en el Google Doc y el nombre de la columna correspondiente en el Google Sheet.</p>
+  <div class="column-pair">
+    <input type="text" placeholder="Marcador en Google Doc (ej: {{NOMBRE}})" class="doc-marker">
+    <input type="text" placeholder="Columna en Google Sheet" class="sheet-column">
+  </div>
+</div>
+
+<div class="button-group">
+  <button type="button" id="addColumnMapping">Añadir Otro Mapeo</button>
+  <button type="button" id="removeColumnMapping">Eliminar un Mapeo</button>
+</div>
+
+<button type="button" id="verifyButton">Verificar Marcadores y Columnas</button>
+<div id="verificationStatus"></div>
+
+<button type="button" id="reporteButton">Reporte de Movimientos</button>
+<button type="submit">Generar Documentos</button>
+
+<script>
+var isConnected = false;
+var logs = [];
+var verifiedColumns = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('verifySheetButton').addEventListener('click', function() {
+    if (this.textContent === 'Verificar Pestaña') {
+      verifySheet();
+    } else {
+      document.getElementById('sheetNameInput').disabled = false;
+      this.textContent = 'Verificar Pestaña';
+      this.style.backgroundColor = '';
+      document.getElementById('rangeDefinitionSection').style.display = 'none';
+    }
+  });
+
+  document.getElementById('verifyButton').addEventListener('click', verifyMappings);
+  document.getElementById('defineRangeButton').addEventListener('click', defineRange);
+  document.getElementById('viewRangeButton').addEventListener('click', viewRange);
+  document.getElementById('reporteButton').addEventListener('click', mostrarReporte);
+  document.getElementById('addColumnMapping').addEventListener('click', addColumnMapping);
+  document.getElementById('removeColumnMapping').addEventListener('click', removeColumnMapping);
+  updateRemoveButtonState();
+});
+</script>
+
+<?!= include('Index-4-verification'); ?>
+<?!= include('Index-4-range'); ?>
+<?!= include('Index-4-utils'); ?>
+
+<!-- Index-4-verification.html -->
+<script>
+function verifyMappings() {
+  var verifyButton = document.getElementById('verifyButton');
+  var verificationStatus = document.getElementById('verificationStatus');
+  var docMarkers = document.querySelectorAll('.doc-marker');
+  var sheetColumns = document.querySelectorAll('.sheet-column');
+
+  if (!isConnected) {
+    alert('Por favor, conecte con los archivos antes de verificar.');
+    logs.push('Intento de verificar marcadores y columnas sin estar conectado.');
+    return;
+  }
+
+  verificationStatus.textContent = 'Verificando...';
+  verifyButton.disabled = true;
+  logs.push('Iniciando verificación de marcadores y columnas.');
+
+  var mappingsToVerify = [];
+  for (var i = 0; i < docMarkers.length; i++) {
+    mappingsToVerify.push({
+      docMarker: docMarkers[i].value.trim(),
+      sheetColumn: sheetColumns[i].value.trim()
+    });
+  }
+
+  var sheetName = document.getElementById('sheetNameInput').value.trim();
+  logs.push('Datos a verificar: ' + JSON.stringify(mappingsToVerify));
+
+  google.script.run
+    .withSuccessHandler(function(response) {
+      verifyButton.disabled = false;
+      if (response.success) {
+        displayVerificationResults(response.results);
+      } else {
+        verificationStatus.textContent = 'Error en la verificación: ' + response.error;
+        logs.push('Error en la verificación: ' + response.error);
+      }
+    })
+    .withFailureHandler(function(error) {
+      verifyButton.disabled = false;
+      verificationStatus.textContent = 'Error en la verificación: ' + error;
+      logs.push('Error en la llamada al servidor: ' + error);
+    })
+    .verifyMappingsServer(mappingsToVerify, 
+      document.getElementById('googleDocId').value,
+      document.getElementById('googleSheetId').value, 
+      sheetName);
+}
+
+function displayVerificationResults(results) {
+  var verificationStatus = document.getElementById('verificationStatus');
+  var docMarkers = document.querySelectorAll('.doc-marker');
+  var sheetColumns = document.querySelectorAll('.sheet-column');
+
+  var allCorrect = results.every(result => result.docMarkerExists && result.sheetColumnExists);
+
+  results.forEach((result, index) => {
+    removeVerificationIcon(docMarkers[index]);
+    removeVerificationIcon(sheetColumns[index]);
+    addVerificationIcon(docMarkers[index], result.docMarkerExists);
+    addVerificationIcon(sheetColumns[index], result.sheetColumnExists);
+  });
+
+  if (allCorrect) {
+    verificationStatus.textContent = 'Todas las columnas y marcadores están correctos';
+    verificationStatus.className = 'verification-status';
+    logs.push('Verificación exitosa: todos los marcadores y columnas son correctos.');
+  } else {
+    verificationStatus.innerHTML = '🚨 Existe una o más celdas que no pudieron ser verificadas. Comprueba que en Google Sheet el nombre de la columna sea similar al que ingresaste en la celda (verificar que no existan espacios después del nombre de la columna). De igual forma, verifica los marcadores en Google Doc.';
+    verificationStatus.className = 'verification-status verification-error';
+    logs.push('Verificación con errores: existen marcadores o columnas incorrectos.');
+  }
+
+  // Actualizar las columnas verificadas
+  verifiedColumns = results.filter(r => r.docMarkerExists && r.sheetColumnExists)
+    .map((_, index) => document.querySelectorAll('.sheet-column')[index].value);
+  updateColumnSelect();
+}
+</script>
+<!-- Index-4-range.html -->
+<script>
+function defineRange() {
+  var defineRangeButton = document.getElementById('defineRangeButton');
+  var viewRangeButton = document.getElementById('viewRangeButton');
+  var columnSelect = document.getElementById('columnSelect');
+  var rangeFrom = document.getElementById('rangeFrom');
+  var rangeTo = document.getElementById('rangeTo');
+
+  if (defineRangeButton.textContent === 'Definir Rango') {
+    columnSelect.disabled = true;
+    rangeFrom.disabled = true;
+    rangeTo.disabled = true;
+    defineRangeButton.textContent = 'Definir Nuevo Rango';
+    defineRangeButton.style.backgroundColor = '#FFA500';
+    viewRangeButton.disabled = false;
+  } else {
+    columnSelect.disabled = false;
+    rangeFrom.disabled = false;
+    rangeTo.disabled = false;
+    defineRangeButton.textContent = 'Definir Rango';
+    defineRangeButton.style.backgroundColor = '';
+    viewRangeButton.disabled = true;
   }
 }
 
-function verifyMappingsServer(mappings, googleDocId, googleSheetId, sheetName) {
-  try {
-    var doc = DocumentApp.openById(googleDocId);
-    var docText = doc.getBody().getText();
+function viewRange() {
+  var columnSelect = document.getElementById('columnSelect');
+  var rangeFrom = document.getElementById('rangeFrom');
+  var rangeTo = document.getElementById('rangeTo');
+  var sheetName = document.getElementById('sheetNameInput').value.trim();
 
-    var spreadsheet = SpreadsheetApp.openById(googleSheetId);
-    var sheet = spreadsheet.getSheetByName(sheetName);
-    if (!sheet) {
-      return {
-        success: false,
-        error: 'La pestaña especificada no existe en el Google Sheet.'
-      };
-    }
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (result.success) {
+        alert('Rango definido: ' + result.range + '\n\nDatos en el rango:\n' + result.data.join('\n'));
+      } else {
+        alert('Error al obtener el rango: ' + result.error);
+      }
+    })
+    .withFailureHandler(function(error) {
+      alert('Error al obtener el rango: ' + error);
+    })
+    .getRange(document.getElementById('googleSheetId').value, sheetName, columnSelect.value, rangeFrom.value, rangeTo.value);
+}
 
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+function updateColumnSelect() {
+  var columnSelect = document.getElementById('columnSelect');
+  columnSelect.innerHTML = '';
+  verifiedColumns.forEach(function(column) {
+    var option = document.createElement('option');
+    option.value = column;
+    option.textContent = column;
+    columnSelect.appendChild(option);
+  });
+}
+</script>
+<!-- Index-4-utils.html -->
+<script>
+function removeVerificationIcon(element) {
+  var existingIcon = element.parentNode.querySelector('.verification-icon');
+  if (existingIcon) {
+    existingIcon.remove();
+  }
+}
 
-    var results = mappings.map(function(mapping) {
-      return {
-        docMarkerExists: docText.indexOf(mapping.docMarker) !== -1,
-        sheetColumnExists: headers.indexOf(mapping.sheetColumn) !== -1
-      };
+function addVerificationIcon(element, isValid) {
+  var icon = document.createElement('span');
+  icon.className = 'verification-icon';
+  icon.textContent = isValid ? '✅' : '❌';
+  element.parentNode.insertBefore(icon, element.nextSibling);
+}
+
+function addColumnMapping() {
+  var columnMappings = document.getElementById('columnMappings');
+  var newPair = document.createElement('div');
+  newPair.className = 'column-pair';
+  newPair.innerHTML = 
+    <input type="text" placeholder="Marcador en Google Doc (ej: {{NOMBRE}})" class="doc-marker">
+    <input type="text" placeholder="Columna en Google Sheet" class="sheet-column">
+  ;
+  columnMappings.appendChild(newPair);
+  updateRemoveButtonState();
+  logs.push('Añadido un nuevo mapeo de marcador y columna.');
+}
+
+function removeColumnMapping() {
+  var columnMappings = document.getElementById('columnMappings');
+  var columnPairs = columnMappings.getElementsByClassName('column-pair');
+  if (columnPairs.length > 1) {
+    columnMappings.removeChild(columnPairs[columnPairs.length - 1]);
+    updateRemoveButtonState();
+    logs.push('Eliminado un mapeo de marcador y columna.');
+  }
+}
+
+function updateRemoveButtonState() {
+  var columnPairs = document.getElementsByClassName('column-pair');
+  var removeButton = document.getElementById('removeColumnMapping');
+  removeButton.disabled = columnPairs.length <= 1;
+}
+
+function mostrarReporte() {
+  var reporteVentana = window.open('', 'Reporte de Movimientos', 'width=800,height=600,scrollbars=yes');
+  reporteVentana.document.write('<html><head><title>Reporte de Movimientos</title></head><body>');
+  reporteVentana.document.write('<h1>Reporte de Movimientos</h1>');
+  reporteVentana.document.write('<pre>' + logs.join('\n') + '</pre>');
+  reporteVentana.document.write('<h2>Compartir con ChatGPT</h2>');
+  reporteVentana.document.write('<pre>' + JSON.stringify(logs, null, 2) + '</pre>');
+  reporteVentana.document.write('</body></html>');
+  reporteVentana.document.close();
+}
+</script>
+
+<script>
+var logs = logs || []; // Asegurar que la variable logs está definida
+
+function verifySheet() {
+  var sheetNameInput = document.getElementById('sheetNameInput');
+  var verifySheetButton = document.getElementById('verifySheetButton');
+  var sheetVerificationStatus = document.getElementById('sheetVerificationStatus');
+
+  if (!isConnected) {
+    alert('Por favor, conecte con los archivos antes de verificar la pestaña.');
+    logs.push('Intento de verificar pestaña sin estar conectado.');
+    return;
+  }
+
+  sheetVerificationStatus.textContent = 'Verificando...';
+  verifySheetButton.disabled = true;
+  logs.push('Iniciando verificación de la pestaña: ' + sheetNameInput.value.trim());
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      console.log('Resultado de la verificación:', result);
+      if (result.exists) {
+        sheetVerificationStatus.innerHTML = '✅ ' + result.message;
+        sheetVerificationStatus.style.color = 'green';
+        enableMappingInputs();
+        logs.push('Pestaña verificada y encontrada: ' + sheetNameInput.value.trim());
+      } else {
+        var logsInfo = result.logs.join('<br>');
+        sheetVerificationStatus.innerHTML = '❌ ' + result.message + '<br><br>' +
+          'Pestañas disponibles:<br>' + result.availableSheets.join(', ') + '<br><br>' +
+          'Logs:<br>' + logsInfo;
+        sheetVerificationStatus.style.color = 'red';
+        disableMappingInputs();
+        logs.push('Pestaña no encontrada: ' + sheetNameInput.value.trim());
+      }
+      verifySheetButton.disabled = false;
+    })
+    .withFailureHandler(function(error) {
+      console.error('Error en la verificación:', error);
+      sheetVerificationStatus.innerHTML = 'Error en la verificación: ' + error + '<br><br>' +
+        'Stack: ' + (error.stack || 'No disponible');
+      sheetVerificationStatus.style.color = 'red';
+      verifySheetButton.disabled = false;
+      disableMappingInputs();
+      logs.push('Error en la verificación de pestaña: ' + error);
+    })
+    .verifySheetName(sheetNameInput.value.trim(), document.getElementById('googleSheetId').value);
+}
+
+function enableMappingInputs() {
+  document.querySelectorAll('#columnMappings input, #addColumnMapping, #removeColumnMapping, #verifyButton').forEach(function(el) {
+    el.disabled = false;
+  });
+}
+
+function disableMappingInputs() {
+  document.querySelectorAll('#columnMappings input, #addColumnMapping, #removeColumnMapping, #verifyButton').forEach(function(el) {
+    el.disabled = true;
+  });
+}
+
+// Agregar event listener para el botón de verificación de pestaña
+document.getElementById('verifySheetButton').addEventListener('click', verifySheet);
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Definir la variable isConnected en el ámbito global si no está definida
+  if (typeof isConnected === 'undefined') {
+    var isConnected = false;
+  }
+
+  // Agregar event listeners
+  document.getElementById('connectButton').addEventListener('click', toggleConnection);
+  document.getElementById('verifyButton').addEventListener('click', verifyMappings);
+  document.getElementById('addColumnMapping').addEventListener('click', addColumnMapping);
+  document.getElementById('removeColumnMapping').addEventListener('click', removeColumnMapping);
+  document.getElementById('confirmDelete').addEventListener('click', confirmDelete);
+  document.getElementById('cancelDelete').addEventListener('click', cancelDelete);
+  document.getElementById('documentForm').addEventListener('submit', handleFormSubmit);
+
+  // Deshabilitar los inputs de mapeo al cargar la página
+  disableMappingInputs();
+  updateRemoveButtonState();
+});
+</script>
+
+<div id="spinner"></div>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Configuración de Correspondencia</title>
+  <?!= include('Index-1-css'); ?>
+</head>
+<body>
+  <div class="container">
+    <div class="block">
+      <h1>Configuración de Correspondencia</h1>
+    </div>
+    <div class="block">
+      <div id="fileIdInputs">
+        <label for="googleDocId">ID del Google Doc Template: <span id="docNameLabel" class="file-name"></span></label>
+        <input type="text" id="googleDocId" required>
+        <label for="googleSheetId">ID de la Hoja de Cálculo de Google: <span id="sheetNameLabel" class="file-name"></span></label>
+        <input type="text" id="googleSheetId" required>
+        <label for="outputFolderId">ID de la Carpeta de Salida: <span id="folderNameLabel" class="file-name"></span></label>
+        <input type="text" id="outputFolderId" required>
+        <button type="button" id="connectButton">Conectar con Archivos</button>
+        <div id="connectionStatus"></div>
+      </div>
+    </div>
+    <div class="block">
+      <div id="sheetSelectionSection">
+        <h3>Seleccionar Pestaña de Google Sheet</h3>
+        <div class="sheet-selection">
+          <input type="text" id="sheetNameInput" placeholder="Nombre de la pestaña" disabled>
+          <button type="button" id="verifySheetButton" disabled>Verificar Pestaña</button>
+        </div>
+        <div id="sheetVerificationStatus"></div>
+      </div>
+    </div>
+    <?!= include('Index-4-main'); ?>
+    <div class="block">
+      <button type="button" id="reporteButton">Reporte de Movimientos</button>
+      <button type="submit" id="generateButton">Generar Documentos</button>
+    </div>
+  </div>
+  <div id="spinner"></div>
+  <?!= include('Index-8-main'); ?>
+  <?!= include('Index-9'); ?>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('connectButton').addEventListener('click', toggleConnection);
+      document.getElementById('verifySheetButton').addEventListener('click', handleVerifySheet);
+      document.getElementById('reporteButton').addEventListener('click', mostrarReporte);
+      document.getElementById('generateButton').addEventListener('click', generateDocuments);
     });
 
-    return {
-      success: true,
-      results: results
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.toString()
-    };
+    function handleVerifySheet() {
+      var verifySheetButton = document.getElementById('verifySheetButton');
+      var sheetNameInput = document.getElementById('sheetNameInput');
+      if (verifySheetButton.textContent === 'Verificar Pestaña') {
+        verifySheet();
+      } else {
+        // Cambiar el botón de "Verificar Otra Pestaña" a "Verificar Pestaña"
+        verifySheetButton.textContent = 'Verificar Pestaña';
+        // Desbloquear la celda para ingresar el nombre de la pestaña
+        sheetNameInput.disabled = false;
+      }
+    }
+
+    function verifySheet() {
+      var sheetNameInput = document.getElementById('sheetNameInput');
+      var verifySheetButton = document.getElementById('verifySheetButton');
+      var sheetVerificationStatus = document.getElementById('sheetVerificationStatus');
+
+      if (!isConnected) {
+        alert('Por favor, conecte con los archivos antes de verificar la pestaña.');
+        logs.push('Intento de verificar pestaña sin estar conectado.');
+        return;
+      }
+
+      sheetVerificationStatus.textContent = 'Verificando...';
+      verifySheetButton.disabled = true;
+      logs.push('Iniciando verificación de la pestaña: ' + sheetNameInput.value.trim());
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('Resultado de la verificación:', result);
+          if (result.exists) {
+            sheetVerificationStatus.innerHTML = '✅ ' + result.message;
+            sheetVerificationStatus.style.color = 'green';
+            sheetNameInput.disabled = true;
+            verifySheetButton.textContent = 'Verificar Otra Pestaña';
+            verifySheetButton.style.backgroundColor = '#FFA500';
+            document.getElementById('rangeDefinitionSection').style.display = 'block';
+            logs.push('Pestaña verificada y encontrada: ' + sheetNameInput.value.trim());
+          } else {
+            sheetVerificationStatus.innerHTML = '❌ ' + result.message + '<br><br>' +
+              'Pestañas disponibles:<br>' + result.availableSheets.join(', ');
+            sheetVerificationStatus.style.color = 'red';
+            logs.push('Pestaña no encontrada: ' + sheetNameInput.value.trim());
+          }
+          verifySheetButton.disabled = false;
+        })
+        .withFailureHandler(function(error) {
+          console.error('Error en la verificación:', error);
+          sheetVerificationStatus.innerHTML = 'Error en la verificación: ' + error;
+          sheetVerificationStatus.style.color = 'red';
+          verifySheetButton.disabled = false;
+          logs.push('Error en la verificación de pestaña: ' + error);
+        })
+        .verifySheetName(sheetNameInput.value.trim(), document.getElementById('googleSheetId').value);
+    }
+
+    function mostrarReporte() {
+      var reporteVentana = window.open('', 'Reporte de Movimientos', 'width=800,height=600,scrollbars=yes');
+      reporteVentana.document.write('<html><head><title>Reporte de Movimientos</title></head><body>');
+      reporteVentana.document.write('<h1>Reporte de Movimientos</h1>');
+      reporteVentana.document.write('<pre>' + logs.join('\n') + '</pre>');
+      reporteVentana.document.write('<h2>Compartir con ChatGPT</h2>');
+      reporteVentana.document.write('<pre>' + JSON.stringify(logs, null, 2) + '</pre>');
+      reporteVentana.document.write('</body></html>');
+      reporteVentana.document.close();
+    }
+
+    function generateDocuments() {
+      alert('Función de generación de documentos aún no implementada');
+    }
+  </script>
+</body>
+</html>
+<script>
+var isConnected = false;
+var logs = [];
+var verifiedColumns = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('connectButton').addEventListener('click', toggleConnection);
+  document.getElementById('verifySheetButton').addEventListener('click', verifySheet);
+  document.getElementById('verifyButton').addEventListener('click', verifyMappings);
+});
+
+function enableRangeDefinition() {
+  document.getElementById('columnSelect').disabled = false;
+  document.getElementById('rangeFrom').disabled = false;
+  document.getElementById('rangeTo').disabled = false;
+  document.getElementById('defineRangeButton').disabled = false;
+  document.getElementById('rangeDefinitionSection').style.display = 'block';
+}
+
+function disableRangeDefinition() {
+  document.getElementById('columnSelect').disabled = true;
+  document.getElementById('rangeFrom').disabled = true;
+  document.getElementById('rangeTo').disabled = true;
+  document.getElementById('defineRangeButton').disabled = true;
+  document.getElementById('viewRangeButton').disabled = true;
+  document.getElementById('rangeDefinitionSection').style.display = 'none';
+}
+
+<?!= include('Index-8-connection'); ?>
+<?!= include('Index-8-sheet-verification'); ?>
+<?!= include('Index-8-mapping-verification'); ?>
+</script>
+<script>
+function toggleConnection() {
+  var connectButton = document.getElementById('connectButton');
+  var googleDocId = document.getElementById('googleDocId');
+  var googleSheetId = document.getElementById('googleSheetId');
+  var outputFolderId = document.getElementById('outputFolderId');
+  var connectionStatus = document.getElementById('connectionStatus');
+  var sheetNameInput = document.getElementById('sheetNameInput');
+  var verifySheetButton = document.getElementById('verifySheetButton');
+
+  if (!isConnected) {
+    if (googleDocId.value && googleSheetId.value && outputFolderId.value) {
+      connectionStatus.textContent = 'Conectando...';
+      connectionStatus.style.color = '';
+      logs.push('Iniciando conexión con los archivos.');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            connectionStatus.textContent = 'Conexión exitosa!';
+            connectionStatus.style.color = 'green';
+            googleDocId.disabled = true;
+            googleSheetId.disabled = true;
+            outputFolderId.disabled = true;
+            connectButton.textContent = 'Desconectar';
+            connectButton.classList.add('connected');
+            isConnected = true;
+            sheetNameInput.disabled = false;
+            verifySheetButton.disabled = false;
+            document.getElementById('docNameLabel').textContent = '(' + result.docName + ')';
+            document.getElementById('sheetNameLabel').textContent = '(' + result.sheetName + ')';
+            document.getElementById('folderNameLabel').textContent = '(' + result.folderName + ')';
+            logs.push('Conexión exitosa con los archivos.');
+          } else {
+            connectionStatus.textContent = 'Error de conexión: ' + result.error;
+            connectionStatus.style.color = 'red';
+            logs.push('Error de conexión: ' + result.error);
+          }
+        })
+        .withFailureHandler(function(error) {
+          connectionStatus.textContent = 'Error de conexión: ' + error;
+          connectionStatus.style.color = 'red';
+          logs.push('Error de conexión: ' + error);
+        })
+        .verifyConnection(googleDocId.value, googleSheetId.value, outputFolderId.value);
+    } else {
+      alert('Por favor, ingrese todos los IDs antes de conectar.');
+      logs.push('Intento de conexión sin todos los IDs ingresados.');
+    }
+  } else {
+    googleDocId.disabled = false;
+    googleSheetId.disabled = false;
+    outputFolderId.disabled = false;
+    connectButton.textContent = 'Conectar con Archivos';
+    connectButton.classList.remove('connected');
+    connectionStatus.textContent = '';
+    connectionStatus.style.color = '';
+    isConnected = false;
+    sheetNameInput.disabled = true;
+    verifySheetButton.disabled = true;
+    document.getElementById('docNameLabel').textContent = '';
+    document.getElementById('sheetNameLabel').textContent = '';
+    document.getElementById('folderNameLabel').textContent = '';
+    document.getElementById('rangeDefinitionSection').style.display = 'none';
+    logs.push('Desconexión de los archivos.');
+  }
+}
+</script>
+<script>
+function verifySheet() {
+  var sheetNameInput = document.getElementById('sheetNameInput');
+  var verifySheetButton = document.getElementById('verifySheetButton');
+  var sheetVerificationStatus = document.getElementById('sheetVerificationStatus');
+
+  if (!isConnected) {
+    alert('Por favor, conecte con los archivos antes de verificar la pestaña.');
+    logs.push('Intento de verificar pestaña sin estar conectado.');
+    return;
+  }
+
+  sheetVerificationStatus.textContent = 'Verificando...';
+  verifySheetButton.disabled = true;
+  logs.push('Iniciando verificación de la pestaña: ' + sheetNameInput.value.trim());
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      console.log('Resultado de la verificación:', result);
+      if (result.exists) {
+        sheetVerificationStatus.innerHTML = '✅ ' + result.message;
+        sheetVerificationStatus.style.color = 'green';
+        sheetNameInput.disabled = true;
+        verifySheetButton.textContent = 'Verificar Otra Pestaña';
+        verifySheetButton.style.backgroundColor = '#FFA500';
+        document.getElementById('rangeDefinitionSection').style.display = 'block';
+        logs.push('Pestaña verificada y encontrada: ' + sheetNameInput.value.trim());
+      } else {
+        sheetVerificationStatus.innerHTML = '❌ ' + result.message + '<br><br>' +
+          'Pestañas disponibles:<br>' + result.availableSheets.join(', ');
+        sheetVerificationStatus.style.color = 'red';
+        logs.push('Pestaña no encontrada: ' + sheetNameInput.value.trim());
+      }
+      verifySheetButton.disabled = false;
+    })
+    .withFailureHandler(function(error) {
+      console.error('Error en la verificación:', error);
+      sheetVerificationStatus.innerHTML = 'Error en la verificación: ' + error;
+      sheetVerificationStatus.style.color = 'red';
+      verifySheetButton.disabled = false;
+      logs.push('Error en la verificación de pestaña: ' + error);
+    })
+    .verifySheetName(sheetNameInput.value.trim(), document.getElementById('googleSheetId').value);
+}
+</script>
+<script>
+function verifyMappings() {
+  var verifyButton = document.getElementById('verifyButton');
+  var verificationStatus = document.getElementById('verificationStatus');
+  var docMarkers = document.querySelectorAll('.doc-marker');
+  var sheetColumns = document.querySelectorAll('.sheet-column');
+
+  if (!isConnected) {
+    alert('Por favor, conecte con los archivos antes de verificar.');
+    logs.push('Intento de verificar marcadores y columnas sin estar conectado.');
+    return;
+  }
+
+  verificationStatus.textContent = 'Verificando...';
+  verifyButton.disabled = true;
+  logs.push('Iniciando verificación de marcadores y columnas.');
+
+  var mappingsToVerify = [];
+  for (var i = 0; i < docMarkers.length; i++) {
+    mappingsToVerify.push({
+      docMarker: docMarkers[i].value.trim(),
+      sheetColumn: sheetColumns[i].value.trim()
+    });
+  }
+
+  var sheetName = document.getElementById('sheetNameInput').value.trim();
+  logs.push('Datos a verificar: ' + JSON.stringify(mappingsToVerify));
+
+  google.script.run
+    .withSuccessHandler(function(response) {
+      verifyButton.disabled = false;
+      if (response.success) {
+        displayVerificationResults(response.results);
+      } else {
+        verificationStatus.textContent = 'Error en la verificación: ' + response.error;
+        logs.push('Error en la verificación: ' + response.error);
+      }
+    })
+    .withFailureHandler(function(error) {
+      verifyButton.disabled = false;
+      verificationStatus.textContent = 'Error en la verificación: ' + error;
+      logs.push('Error en la llamada al servidor: ' + error);
+    })
+    .verifyMappingsServer(mappingsToVerify,
+      document.getElementById('googleDocId').value,
+      document.getElementById('googleSheetId').value, 
+      sheetName);
+}
+
+function displayVerificationResults(results) {
+  var verificationStatus = document.getElementById('verificationStatus');
+  var docMarkers = document.querySelectorAll('.doc-marker');
+  var sheetColumns = document.querySelectorAll('.sheet-column');
+
+  var allCorrect = results.every(result => result.docMarkerExists && result.sheetColumnExists);
+
+  results.forEach((result, index) => {
+    removeVerificationIcon(docMarkers[index]);
+    removeVerificationIcon(sheetColumns[index]);
+    addVerificationIcon(docMarkers[index], result.docMarkerExists);
+    addVerificationIcon(sheetColumns[index], result.sheetColumnExists);
+  });
+
+  if (allCorrect) {
+    verificationStatus.textContent = 'Todas las columnas y marcadores están correctos';
+    verificationStatus.className = 'verification-status';
+    logs.push('Verificación exitosa: todos los marcadores y columnas son correctos.');
+    enableRangeDefinition();
+  } else {
+    verificationStatus.innerHTML = '🚨 Existe una o más celdas que no pudieron ser verificadas. Comprueba que en Google Sheet el nombre de la columna sea similar al que ingresaste en la celda (verificar que no existan espacios después del nombre de la columna). De igual forma, verifica los marcadores en Google Doc.';
+    verificationStatus.className = 'verification-status verification-error';
+    logs.push('Verificación con errores: existen marcadores o columnas incorrectos.');
+    disableRangeDefinition();
+  }
+
+  // Actualizar las columnas verificadas
+  verifiedColumns = results.filter(r => r.docMarkerExists && r.sheetColumnExists)
+    .map((_, index) => document.querySelectorAll('.sheet-column')[index].value);
+  updateColumnSelect();
+}
+
+function removeVerificationIcon(element) {
+  var existingIcon = element.parentNode.querySelector('.verification-icon');
+  if (existingIcon) {
+    existingIcon.remove();
   }
 }
 
-function getRange(googleSheetId, sheetName, columnName, fromRow, toRow) {
-  try {
-    var spreadsheet = SpreadsheetApp.openById(googleSheetId);
-    var sheet = spreadsheet.getSheetByName(sheetName);
-    if (!sheet) {
-      return {
-        success: false,
-        error: 'La pestaña especificada no existe en el Google Sheet.'
-      };
-    }
+function addVerificationIcon(element, isValid) {
+  var icon = document.createElement('span');
+  icon.className = 'verification-icon';
+  icon.textContent = isValid ? '✅' : '❌';
+  element.parentNode.insertBefore(icon, element.nextSibling);
+}
 
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var columnIndex = headers.indexOf(columnName) + 1;
-    if (columnIndex === 0) {
-      return {
-        success: false,
-        error: 'La columna especificada no existe en la hoja.'
-      };
-    }
-
-    var columnLetter = String.fromCharCode(64 + columnIndex);
-    var range = columnLetter + fromRow + ':' + columnLetter + toRow;
-    var data = sheet.getRange(range).getValues();
-    var flatData = data.map(function(row) { return row[0]; });
-
-    return {
-      success: true,
-      range: range,
-      data: flatData
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.toString()
-    };
+function updateColumnSelect() {
+  var columnSelect = document.getElementById('columnSelect');
+  columnSelect.innerHTML = '';
+  verifiedColumns.forEach(function(column) {
+    var option = document.createElement('option');
+    option.value = column;
+    option.textContent = column;
+    columnSelect.appendChild(option);
+  });
+}
+</script>
+<!-- Index-9.html -->
+<script>
+function removeVerificationIcon(element) {
+  var existingIcon = element.parentNode.querySelector('.verification-icon');
+  if (existingIcon) {
+    existingIcon.remove();
   }
 }
+
+function addVerificationIcon(element, isValid) {
+  var icon = document.createElement('span');
+  icon.className = 'verification-icon';
+  icon.textContent = isValid ? '✅' : '❌';
+  element.parentNode.insertBefore(icon, element.nextSibling);
+}
+
+function updateColumnSelect() {
+  var columnSelect = document.getElementById('columnSelect');
+  columnSelect.innerHTML = '';
+  verifiedColumns.forEach(function(column) {
+    var option = document.createElement('option');
+    option.value = column;
+    option.textContent = column;
+    columnSelect.appendChild(option);
+  });
+}
+
+function defineRange() {
+  var defineRangeButton = document.getElementById('defineRangeButton');
+  var viewRangeButton = document.getElementById('viewRangeButton');
+  var columnSelect = document.getElementById('columnSelect');
+  var rangeFrom = document.getElementById('rangeFrom');
+  var rangeTo = document.getElementById('rangeTo');
+
+  if (defineRangeButton.textContent === 'Definir Rango') {
+    columnSelect.disabled = true;
+    rangeFrom.disabled = true;
+    rangeTo.disabled = true;
+    defineRangeButton.textContent = 'Definir Nuevo Rango';
+    defineRangeButton.style.backgroundColor = '#FFA500';
+    viewRangeButton.disabled = false;
+  } else {
+    columnSelect.disabled = false;
+    rangeFrom.disabled = false;
+    rangeTo.disabled = false;
+    defineRangeButton.textContent = 'Definir Rango';
+    defineRangeButton.style.backgroundColor = '';
+    viewRangeButton.disabled = true;
+  }
+}
+
+function viewRange() {
+  var columnSelect = document.getElementById('columnSelect');
+  var rangeFrom = document.getElementById('rangeFrom');
+  var rangeTo = document.getElementById('rangeTo');
+  var sheetName = document.getElementById('sheetNameInput').value.trim();
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (result.success) {
+        alert('Rango definido: ' + result.range + '\n\nDatos en el rango:\n' + result.data.join('\n'));
+      } else {
+        alert('Error al obtener el rango: ' + result.error);
+      }
+    })
+    .withFailureHandler(function(error) {
+      alert('Error al obtener el rango: ' + error);
+    })
+    .getRange(document.getElementById('googleSheetId').value, sheetName, columnSelect.value, rangeFrom.value, rangeTo.value);
+}
+
+function addColumnMapping() {
+  var columnMappings = document.getElementById('columnMappings');
+  var newPair = document.createElement('div');
+  newPair.className = 'column-pair';
+  newPair.innerHTML = 
+    <input type="text" placeholder="Marcador en Google Doc (ej: {{NOMBRE}})" class="doc-marker">
+    <input type="text" placeholder="Columna en Google Sheet" class="sheet-column">
+  ;
+  columnMappings.appendChild(newPair);
+  updateRemoveButtonState();
+  logs.push('Añadido un nuevo mapeo de marcador y columna.');
+}
+
+function removeColumnMapping() {
+  var columnMappings = document.getElementById('columnMappings');
+  var columnPairs = columnMappings.getElementsByClassName('column-pair');
+  if (columnPairs.length > 1) {
+    columnMappings.removeChild(columnPairs[columnPairs.length - 1]);
+    updateRemoveButtonState();
+    logs.push('Eliminado un mapeo de marcador y columna.');
+  }
+}
+
+function updateRemoveButtonState() {
+  var columnPairs = document.getElementsByClassName('column-pair');
+  var removeButton = document.getElementById('removeColumnMapping');
+  removeButton.disabled = columnPairs.length <= 1;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('connectButton').addEventListener('click', toggleConnection);
+  document.getElementById('verifySheetButton').addEventListener('click', function() {
+    if (this.textContent === 'Verificar Pestaña') {
+      verifySheet();
+    } else {
+      document.getElementById('sheetNameInput').disabled = false;
+      this.textContent = 'Verificar Pestaña';
+      this.style.backgroundColor = '';
+      document.getElementById('rangeDefinitionSection').style.display = 'none';
+    }
+  });
+  document.getElementById('verifyButton').addEventListener('click', verifyMappings);
+  document.getElementById('defineRangeButton').addEventListener('click', defineRange);
+  document.getElementById('viewRangeButton').addEventListener('click', viewRange);
+  document.getElementById('reporteButton').addEventListener('click', mostrarReporte);
+  document.getElementById('addColumnMapping').addEventListener('click', addColumnMapping);
+  document.getElementById('removeColumnMapping').addEventListener('click', removeColumnMapping);
+  updateRemoveButtonState();
+});
+</script>
