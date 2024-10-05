@@ -224,7 +224,7 @@ button:disabled {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Configuración de Correspondencia</title>
-  <?!= include('Index-1-css'); ?>
+ 
 </head>
 <body>
   <div class="container">
@@ -272,10 +272,7 @@ button:disabled {
     </form>
   </div>
 
-  <?!= include('Index-3'); ?>
-  <?!= include('Index-4'); ?>
-  <?!= include('Index-5'); ?>
-  <?!= include('Index-6'); ?>
+
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
 </body>
@@ -543,9 +540,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?!= include('Index-4-verification'); ?>
-<?!= include('Index-4-range'); ?>
-<?!= include('Index-4-utils'); ?>
 
 <!-- Index-4-verification.html -->
 <script>
@@ -838,7 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <base target="_top">
   <meta charset="UTF-8">
   <title>Configuración de Correspondencia</title>
-  <?!= include('Index-1-css'); ?>
+ 
 </head>
 <body>
   <div class="container">
@@ -867,15 +861,14 @@ document.addEventListener('DOMContentLoaded', function() {
         <div id="sheetVerificationStatus"></div>
       </div>
     </div>
-    <?!= include('Index-4-main'); ?>
+   
     <div class="block">
       <button type="button" id="reporteButton">Reporte de Movimientos</button>
       <button type="submit" id="generateButton">Generar Documentos</button>
     </div>
   </div>
   <div id="spinner"></div>
-  <?!= include('Index-8-main'); ?>
-  <?!= include('Index-9'); ?>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -987,9 +980,6 @@ function disableRangeDefinition() {
   document.getElementById('rangeDefinitionSection').style.display = 'none';
 }
 
-<?!= include('Index-8-connection'); ?>
-<?!= include('Index-8-sheet-verification'); ?>
-<?!= include('Index-8-mapping-verification'); ?>
 </script>
 <script>
 function toggleConnection() {
