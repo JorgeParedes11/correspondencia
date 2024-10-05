@@ -2,7 +2,7 @@
 // Devuelve el contenido de 'index.html'
 function doGet() {
   // Usamos createTemplateFromFile para procesar las plantillas correctamente
-  return HtmlService.createTemplateFromFile('Index-7')
+  return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('Configuración de Correspondencia')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
