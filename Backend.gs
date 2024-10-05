@@ -11,6 +11,7 @@ function doGet() {
 
 // Descripción de lo que hace esta función (ajusta según sea necesario)
 // Explica qué parámetros recibe y qué devuelve
+
 function include(filename) {
   // Función para incluir otros archivos HTML
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
