@@ -1,82 +1,118 @@
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index')
-      .setTitle('Configuración de Correspondencia')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Correspondencia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .container { max-width: 800px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Configuración de Correspondencia</h1>
+        <form id="configForm">
+            <div class="mb-3">
+                <label for="docTemplateId" class="form-label">ID del Google Doc Template:</label>
+                <input type="text" class="form-control" id="docTemplateId" required>
+            </div>
+            <div class="mb-3">
+                <label for="sheetId" class="form-label">ID de la Hoja de Cálculo de Google:</label>
+                <input type="text" class="form-control" id="sheetId" required>
+            </div>
+            <div class="mb-3">
+                <label for="folderId" class="form-label">ID de la Carpeta de Salida:</label>
+                <input type="text" class="form-control" id="folderId" required>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="conectarArchivos()">Conectar con Archivos</button>
+            
+            <hr>
+            
+            <div class="mb-3">
+                <label for="sheetName" class="form-label">Nombre de la pestaña de Google Sheet:</label>
+                <input type="text" class="form-control" id="sheetName">
+                <button type="button" class="btn btn-success mt-2" onclick="verificarPestana()">Verificar Pestaña</button>
+            </div>
+            
+            <hr>
+            
+            <h3>Mapeo de Marcadores y Columnas</h3>
+            <div id="mapeoContainer">
+                <div class="row mb-2">
+                    <div class="col">
+                        <input type="text" class="form-control" placeholder="Marcador en Google Doc">
+                    </div>
+                    <div class="col">
+                        <input type="text" class="form-control" placeholder="Columna en Google Sheet">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-success" onclick="anadirMapeo()">Añadir Otro Mapeo</button>
+            <button type="button" class="btn btn-warning" onclick="eliminarMapeo()">Eliminar un Mapeo</button>
+            <button type="button" class="btn btn-primary mt-2" onclick="verificarMarcadores()">Verificar Marcadores y Columnas</button>
+            
+            <hr>
+            
+            <button type="button" class="btn btn-info" onclick="reporteMovimientos()">Reporte de Movimientos</button>
+            <button type="button" class="btn btn-success" onclick="generarDocumentos()">Generar Documentos</button>
+        </form>
+    </div>
 
-function conectarArchivos(docTemplateId, sheetId, folderId) {
-  // Verify if the provided IDs are valid and accessible
-  try {
-    DocumentApp.openById(docTemplateId);
-    SpreadsheetApp.openById(sheetId);
-    DriveApp.getFolderById(folderId);
-    
-    PropertiesService.getScriptProperties().setProperties({
-      'docTemplateId': docTemplateId,
-      'sheetId': sheetId,
-      'folderId': folderId
-    });
-    
-    return 'Archivos conectados exitosamente';
-  } catch (error) {
-    throw new Error('Error al conectar archivos: ' + error.message);
-  }
-}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function conectarArchivos() {
+            google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).conectarArchivos(
+                document.getElementById('docTemplateId').value,
+                document.getElementById('sheetId').value,
+                document.getElementById('folderId').value
+            );
+        }
 
-function verificarPestana(sheetName) {
-  const sheetId = PropertiesService.getScriptProperties().getProperty('sheetId');
-  if (!sheetId) {
-    throw new Error('ID de la hoja de cálculo no configurado');
-  }
-  
-  const spreadsheet = SpreadsheetApp.openById(sheetId);
-  const sheet = spreadsheet.getSheetByName(sheetName);
-  
-  if (sheet) {
-    return 'Pestaña verificada exitosamente';
-  } else {
-    throw new Error('La pestaña especificada no existe');
-  }
-}
+        function verificarPestana() {
+            google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).verificarPestana(
+                document.getElementById('sheetName').value
+            );
+        }
 
-function verificarMarcadores(mapeos) {
-  const docTemplateId = PropertiesService.getScriptProperties().getProperty('docTemplateId');
-  const sheetId = PropertiesService.getScriptProperties().getProperty('sheetId');
-  
-  if (!docTemplateId || !sheetId) {
-    throw new Error('IDs de documento o hoja de cálculo no configurados');
-  }
-  
-  const docTemplate = DocumentApp.openById(docTemplateId);
-  const sheet = SpreadsheetApp.openById(sheetId).getActiveSheet();
-  
-  const docContent = docTemplate.getBody().getText();
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
-  let errores = [];
-  
-  mapeos.forEach(mapeo => {
-    if (!docContent.includes(mapeo.marcador)) {
-      errores.push(`Marcador "${mapeo.marcador}" no encontrado en el documento`);
-    }
-    if (!headers.includes(mapeo.columna)) {
-      errores.push(`Columna "${mapeo.columna}" no encontrada en la hoja de cálculo`);
-    }
-  });
-  
-  if (errores.length > 0) {
-    throw new Error(errores.join('\n'));
-  }
-  
-  return 'Todos los marcadores y columnas verificados exitosamente';
-}
+        function anadirMapeo() {
+            const container = document.getElementById('mapeoContainer');
+            const newRow = container.children[0].cloneNode(true);
+            newRow.querySelectorAll('input').forEach(input => input.value = '');
+            container.appendChild(newRow);
+        }
 
-function reporteMovimientos() {
-  // Implementar lógica para generar reporte de movimientos
-  return 'Reporte de movimientos generado';
-}
+        function eliminarMapeo() {
+            const container = document.getElementById('mapeoContainer');
+            if (container.children.length > 1) {
+                container.removeChild(container.lastChild);
+            }
+        }
 
-function generarDocumentos() {
-  // Implementar lógica para generar documentos
-  return 'Documentos generados exitosamente';
-}
+        function verificarMarcadores() {
+            const mapeos = Array.from(document.getElementById('mapeoContainer').children).map(row => ({
+                marcador: row.children[0].querySelector('input').value,
+                columna: row.children[1].querySelector('input').value
+            }));
+            google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).verificarMarcadores(mapeos);
+        }
+
+        function reporteMovimientos() {
+            google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).reporteMovimientos();
+        }
+
+        function generarDocumentos() {
+            google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).generarDocumentos();
+        }
+
+        function onSuccess(message) {
+            alert(message || 'Operación exitosa');
+        }
+
+        function onFailure(error) {
+            alert('Error: ' + error);
+        }
+    </script>
+</body>
+</html>
