@@ -1,6 +1,5 @@
 // Función que sirve la página HTML principal cuando el usuario accede
 // Devuelve el contenido de 'index.html'
-
 function doGet() {
   // Usamos createTemplateFromFile para procesar las plantillas correctamente
   return HtmlService.createTemplateFromFile('Index-7')
@@ -12,7 +11,6 @@ function doGet() {
 
 // Descripción de lo que hace esta función (ajusta según sea necesario)
 // Explica qué parámetros recibe y qué devuelve
-
 function include(filename) {
   // Función para incluir otros archivos HTML
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
