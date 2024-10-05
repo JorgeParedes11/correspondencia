@@ -1,3 +1,6 @@
+// Función que sirve la página HTML principal cuando el usuario accede
+// Devuelve el contenido de 'index.html'
+
 function doGet() {
   // Usamos createTemplateFromFile para procesar las plantillas correctamente
   return HtmlService.createTemplateFromFile('Index-7')
@@ -5,6 +8,10 @@ function doGet() {
     .setTitle('Configuración de Correspondencia')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
+
+
+// Descripción de lo que hace esta función (ajusta según sea necesario)
+// Explica qué parámetros recibe y qué devuelve
 
 function include(filename) {
   // Función para incluir otros archivos HTML
@@ -238,12 +245,41 @@ function generateDocuments(googleDocId, googleSheetId, sheetName, outputFolderId
   }
 }
 
-// Backend-4.gs
-
-function verifyMappingsServer(mappings, googleDocId, googleSheetId, sheetName) {
-  var logs = [];
+function generateDocuments(googleDocId, googleSheetId, outputFolderId, columnMappings) {
   try {
-    logs.push('Iniciando verifyMappingsServer');
+    var template = DocumentApp.openById(googleDocId);
+    var sheet = SpreadsheetApp.openById(googleSheetId);
+    var outputFolder = DriveApp.getFolderById(outputFolderId);
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var newDoc = template.makeCopy(outputFolder);
+      var body = newDoc.getBody();
+
+      columnMappings.forEach(function(mapping) {
+        var columnIndex = headers.indexOf(mapping.sheetColumn);
+        if (columnIndex !== -1) {
+          body.replaceText(mapping.docMarker, row[columnIndex] || '');
+        }
+      });
+
+      newDoc.setName('Documento generado - ' + i);
+      newDoc.saveAndClose();
+    }
+
+    return true;
+  } catch (error) {
+    Logger.log('Error en la generación de documentos: ' + error.toString());
+    return false;
+  }
+}
+
+function verifyMappings(mappings, googleDocId, googleSheetId, sheetName) {
+  try {
+    var logs = [];
+    logs.push('Iniciando verifyMappings');
     logs.push('googleDocId: ' + googleDocId);
     logs.push('googleSheetId: ' + googleSheetId);
     logs.push('sheetName: ' + sheetName);
@@ -253,18 +289,13 @@ function verifyMappingsServer(mappings, googleDocId, googleSheetId, sheetName) {
     logs.push('Documento abierto correctamente');
 
     var spreadsheet = SpreadsheetApp.openById(googleSheetId);
-    var sheet = spreadsheet.getSheetByName(sheetName);
-    if (!sheet) {
-      logs.push('La pestaña especificada no existe en el Google Sheet.');
-      return {
-        success: false,
-        error: 'La pestaña especificada no existe en el Google Sheet.',
-        logs: logs
-      };
+    var targetSheet = spreadsheet.getSheetByName(sheetName);
+    if (!targetSheet) {
+      throw 'La pestaña especificada no existe en el Google Sheet.';
     }
     logs.push('Hoja de cálculo y pestaña abiertas correctamente');
 
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var headers = targetSheet.getRange(1, 1, 1, targetSheet.getLastColumn()).getValues()[0];
     logs.push('Encabezados obtenidos: ' + headers.join(', '));
 
     var results = mappings.map(function(mapping) {
@@ -274,6 +305,13 @@ function verifyMappingsServer(mappings, googleDocId, googleSheetId, sheetName) {
       };
 
       logs.push('Verificando mapeo: ' + JSON.stringify(mapping));
+
+      // Si ambos están vacíos, los consideramos como válidos pero serán ignorados
+      if (mapping.docMarker === '' && mapping.sheetColumn === '') {
+        result.docMarkerExists = true;
+        result.sheetColumnExists = true;
+        return result;
+      }
 
       // Verificar marcador en el documento
       if (mapping.docMarker && docText.indexOf(mapping.docMarker) !== -1) {
@@ -291,15 +329,101 @@ function verifyMappingsServer(mappings, googleDocId, googleSheetId, sheetName) {
 
     logs.push('Verificación completada');
 
+    // Devolvemos los resultados y los logs al cliente
     return {
       success: true,
       results: results,
       logs: logs
     };
   } catch (error) {
-    logs.push('Error en verifyMappingsServer: ' + error);
+    logs.push('Error en verifyMappings: ' + error);
+    // Devolvemos el error y los logs al cliente
     return {
       success: false,
+      error: error.toString(),
+      logs: logs
+    };
+  }
+}
+
+// Backend-4.gs
+
+function verifyMappingsServer(mappings, googleDocId, googleSheetId, sheetName) {
+  try {
+    var doc = DocumentApp.openById(googleDocId);
+    var docText = doc.getBody().getText();
+
+    var spreadsheet = SpreadsheetApp.openById(googleSheetId);
+    var sheet = spreadsheet.getSheetByName(sheetName);
+    if (!sheet) {
+      return {
+        success: false,
+        error: 'La pestaña especificada no existe en el Google Sheet.'
+      };
+    }
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    var results = mappings.map(function(mapping) {
+      return {
+        docMarkerExists: docText.indexOf(mapping.docMarker) !== -1,
+        sheetColumnExists: headers.indexOf(mapping.sheetColumn) !== -1
+      };
+    });
+
+    return {
+      success: true,
+      results: results
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+function verifySheetName(sheetName, googleSheetId) {
+  var logs = [];
+  try {
+    logs.push("Iniciando verificación para la pestaña: " + sheetName);
+    logs.push("ID de la hoja de cálculo: " + googleSheetId);
+
+    var spreadsheet = SpreadsheetApp.openById(googleSheetId);
+    logs.push("Hoja de cálculo abierta correctamente");
+
+    var allSheets = spreadsheet.getSheets();
+    var sheetNames = allSheets.map(function(s) { return s.getName(); });
+    logs.push("Nombres de todas las pestañas: " + JSON.stringify(sheetNames));
+
+    var targetSheet = spreadsheet.getSheetByName(sheetName);
+    if (targetSheet !== null) {
+      logs.push("Pestaña encontrada");
+      return {
+        exists: true,
+        message: "Pestaña '" + sheetName + "' encontrada",
+        sheetInfo: {
+          name: targetSheet.getName(),
+          index: targetSheet.getIndex(),
+          id: targetSheet.getSheetId()
+        },
+        logs: logs
+      };
+    } else {
+      logs.push("Pestaña no encontrada");
+      return {
+        exists: false,
+        message: "Pestaña '" + sheetName + "' no encontrada",
+        availableSheets: sheetNames,
+        logs: logs
+      };
+    }
+  } catch (error) {
+    logs.push("Error: " + error.toString());
+    logs.push("Stack: " + error.stack);
+    return {
+      exists: false,
+      message: "Error en la verificación de la pestaña",
       error: error.toString(),
       logs: logs
     };
@@ -357,12 +481,14 @@ function getRange(googleSheetId, sheetName, columnName, fromRow, toRow) {
       };
     }
 
-    var data = sheet.getRange(fromRow, columnIndex, toRow - fromRow + 1, 1).getValues();
+    var columnLetter = String.fromCharCode(64 + columnIndex);
+    var range = columnLetter + fromRow + ':' + columnLetter + toRow;
+    var data = sheet.getRange(range).getValues();
     var flatData = data.map(function(row) { return row[0]; });
 
     return {
       success: true,
-      range: 'Column ' + columnName + ' from row ' + fromRow + ' to ' + toRow,
+      range: range,
       data: flatData
     };
   } catch (error) {
@@ -374,24 +500,13 @@ function getRange(googleSheetId, sheetName, columnName, fromRow, toRow) {
 }
 
 function generateDocuments(googleDocId, googleSheetId, sheetName, outputFolderId, columnMappings, rangeFrom, rangeTo) {
-  var logs = [];
   try {
-    logs.push('Iniciando generateDocuments con rango');
-    logs.push('googleDocId: ' + googleDocId);
-    logs.push('googleSheetId: ' + googleSheetId);
-    logs.push('sheetName: ' + sheetName);
-    logs.push('outputFolderId: ' + outputFolderId);
-    logs.push('columnMappings: ' + JSON.stringify(columnMappings));
-    logs.push('rangeFrom: ' + rangeFrom);
-    logs.push('rangeTo: ' + rangeTo);
-
     var template = DocumentApp.openById(googleDocId);
     var sheet = SpreadsheetApp.openById(googleSheetId).getSheetByName(sheetName);
     var outputFolder = DriveApp.getFolderById(outputFolderId);
 
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var data = sheet.getRange(rangeFrom, 1, rangeTo - rangeFrom + 1, sheet.getLastColumn()).getValues();
-    logs.push('Datos obtenidos para el rango especificado');
 
     for (var i = 0; i < data.length; i++) {
       var newDoc = DriveApp.getFileById(template.getId()).makeCopy(outputFolder);
@@ -406,22 +521,16 @@ function generateDocuments(googleDocId, googleSheetId, sheetName, outputFolderId
       });
 
       doc.saveAndClose();
-      logs.push('Documento generado para la fila: ' + (rangeFrom + i));
     }
-
-    logs.push('Generación de documentos completada con éxito');
 
     return {
       success: true,
-      message: 'Documentos generados con éxito.',
-      logs: logs
+      message: 'Documentos generados con éxito.'
     };
   } catch (error) {
-    logs.push('Error en generateDocuments: ' + error);
     return {
       success: false,
-      error: error.toString(),
-      logs: logs
+      error: error.toString()
     };
   }
 }
