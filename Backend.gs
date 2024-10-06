@@ -1,3 +1,5 @@
+// Archivo "Backend.gs"
+
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
       .setTitle('Configuración de Correspondencia')
@@ -80,3 +82,30 @@ function generarDocumentos() {
   // Implementar lógica para generar documentos
   return 'Documentos generados exitosamente';
 }
+
+function obtenerNombrePorId(id) {
+    try {
+        // Intenta obtener el archivo usando el ID
+        var file = DriveApp.getFileById(id);
+        return file.getName(); // Devuelve el nombre del archivo
+    } catch (error) {
+        try {
+            // Si no es un archivo, intenta con una carpeta
+            var folder = DriveApp.getFolderById(id);
+            return folder.getName(); // Devuelve el nombre de la carpeta
+        } catch (err) {
+            return 'No se encontró'; // Error si no se encuentra archivo o carpeta
+        }
+    }
+}
+
+function obtenerPestanas() {
+    const sheetId = PropertiesService.getScriptProperties().getProperty('sheetId');
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    const sheets = spreadsheet.getSheets();
+    
+    // Extraer el nombre de cada pestaña
+    const nombresPestanas = sheets.map(sheet => sheet.getName());
+    return nombresPestanas;
+}
+
