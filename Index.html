@@ -1,3 +1,4 @@
+<!-- archivo "Index.html" -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,35 +9,54 @@
     <style>
         body { padding: 20px; }
         .container { max-width: 800px; }
+
+        /* estilo y color de nombre de google doc, google sheet y carpeta google drive */
+        
+        .archivo-nombre {
+            font-weight: bold;  /* Negrita */
+            font-style: italic; /* Cursiva */
+            color: blue;        /* Color azul */
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="mb-4">Configuración de Correspondencia</h1>
+        <hr style="border: none; height: 5px; background-color: #4a4a4a; border-radius: 10px; margin: 20px 0;">
         <form id="configForm">
+
             <div class="mb-3">
                 <label for="docTemplateId" class="form-label">ID del Google Doc Template:</label>
-                <input type="text" class="form-control" id="docTemplateId" required>
+                <input type="text" class="form-control" id="docTemplateId" onblur="mostrarNombreArchivo('docTemplateId', 'nombreDocTemplate')" required>
+                <span id="nombreDocTemplate" class="archivo-nombre"></span>
             </div>
-            <div class="mb-3">
+            
+            <div class="mb-3">                
                 <label for="sheetId" class="form-label">ID de la Hoja de Cálculo de Google:</label>
-                <input type="text" class="form-control" id="sheetId" required>
+                <input type="text" class="form-control" id="sheetId" onblur="mostrarNombreArchivo('sheetId', 'nombreSheet')" required>
+                <span id="nombreSheet" class="archivo-nombre"></span>
             </div>
+            
             <div class="mb-3">
                 <label for="folderId" class="form-label">ID de la Carpeta de Salida:</label>
-                <input type="text" class="form-control" id="folderId" required>
+                <input type="text" class="form-control" id="folderId" onblur="mostrarNombreArchivo('folderId', 'nombreFolder')" required>
+                <span id="nombreFolder" class="archivo-nombre"></span>
             </div>
-            <button type="button" class="btn btn-primary" onclick="conectarArchivos()">Conectar con Archivos</button>
             
-            <hr>
+            <button type="button" class="btn btn-primary" onclick="anclarArchivos()">Anclar Archivos</button>
+
+            
+            
+        <hr style="border: none; height: 5px; background-color: #4a4a4a; border-radius: 10px; margin: 20px 0;">
+
             
             <div class="mb-3">
                 <label for="sheetName" class="form-label">Nombre de la pestaña de Google Sheet:</label>
-                <input type="text" class="form-control" id="sheetName">
+                <select class="form-control" id="sheetNameDropdown"></select>
                 <button type="button" class="btn btn-success mt-2" onclick="verificarPestana()">Verificar Pestaña</button>
             </div>
             
-            <hr>
+            <hr style="border: none; height: 5px; background-color: #4a4a4a; border-radius: 10px; margin: 20px 0;">
             
             <h3>Mapeo de Marcadores y Columnas</h3>
             <div id="mapeoContainer">
@@ -70,11 +90,79 @@
             );
         }
 
+function anclarArchivos() {
+    // Conectar con los archivos
+    google.script.run.withSuccessHandler(function(response) {
+        alert(response);
+        
+        // Bloquear los campos de ID
+        document.getElementById('docTemplateId').disabled = true;
+        document.getElementById('sheetId').disabled = true;
+        document.getElementById('folderId').disabled = true;
+        
+        // Cambiar el texto del botón a "Desanclar Archivos"
+        var button = document.getElementById('anclarBtn');
+        button.textContent = "Desanclar Archivos";
+        button.onclick = desanclarArchivos;
+        
+        // Cargar las pestañas del Google Sheet
+        cargarPestanas();
+    }).withFailureHandler(function(error) {
+        alert('Error: ' + error);
+    }).conectarArchivos(
+        document.getElementById('docTemplateId').value,
+        document.getElementById('sheetId').value,
+        document.getElementById('folderId').value
+    );
+}
+
+function desanclarArchivos() {
+    // Habilitar los campos de ID
+    document.getElementById('docTemplateId').disabled = false;
+    document.getElementById('sheetId').disabled = false;
+    document.getElementById('folderId').disabled = false;
+    
+    // Cambiar el texto del botón a "Anclar Archivos"
+    var button = document.getElementById('anclarBtn');
+    button.textContent = "Anclar Archivos";
+    button.onclick = anclarArchivos;
+}
+
+function cargarPestanas() {
+    google.script.run.withSuccessHandler(function(pestanas) {
+        var dropdown = document.getElementById('sheetNameDropdown');
+        dropdown.innerHTML = ''; // Limpiar el contenido del dropdown
+        
+        pestanas.forEach(function(pestana) {
+            var option = document.createElement('option');
+            option.value = pestana;
+            option.text = pestana;
+            dropdown.appendChild(option);
+        });
+    }).withFailureHandler(function(error) {
+        alert('Error al cargar pestañas: ' + error);
+    }).obtenerPestanas();
+}
+
+
+
+
+
         function verificarPestana() {
             google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).verificarPestana(
                 document.getElementById('sheetName').value
             );
         }
+
+        function mostrarNombreArchivo(inputId, spanId) {
+            const id = document.getElementById(inputId).value;
+                google.script.run.withSuccessHandler(function(nombre) {
+                document.getElementById(spanId).textContent = nombre;
+                }).withFailureHandler(function(error) {
+                document.getElementById(spanId).textContent = 'No se encontró';
+                }).obtenerNombrePorId(id);
+        }
+
 
         function anadirMapeo() {
             const container = document.getElementById('mapeoContainer');
